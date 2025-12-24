@@ -618,7 +618,8 @@ cb_attr_tree_selection_change (GraphGuruState *s)
 				    PLOT_ATTR_OBJECT, &obj,
 				    -1);
 
-	if (s->prop_object == obj)
+	if (s->prop_object == obj &&
+	    gtk_bin_get_child (GTK_BIN (s->prop_container)))
 		return;
 
 	if (obj) {
@@ -665,9 +666,11 @@ cb_attr_tree_selection_change (GraphGuruState *s)
 		gog_object_can_reorder (obj, &inc_ok, &dec_ok);
 
 		/* create a prefs page for the graph obj */
-		notebook = gog_object_get_editor (obj, s->dalloc, s->cc);
-		gtk_widget_show (notebook);
-		gtk_container_add (s->prop_container, notebook);
+		if (s->current_page == 1) {
+			notebook = gog_object_get_editor (obj, s->dalloc, s->cc);
+			gtk_widget_show (notebook);
+			gtk_container_add (s->prop_container, notebook);
+		}
 
 		/* set selection on graph view */
 		gog_graph_view_set_selection (GOG_GRAPH_VIEW (s->graph_view), obj);
@@ -1052,6 +1055,7 @@ graph_guru_set_page (GraphGuruState *s, int page)
 	if (s->current_page == page)
 		return;
 
+	s->current_page = page;
 	switch (page) {
 	case 0: name = _("Step 1 of 2: Select Chart Type");
 		gtk_widget_set_sensitive (s->button_navigate, s->plot != NULL);
@@ -1070,6 +1074,7 @@ graph_guru_set_page (GraphGuruState *s, int page)
 			gtk_widget_hide	(s->button_navigate);
 		}
 		graph_guru_init_format_page (s);
+		cb_attr_tree_selection_change (s);
 		break;
 
 	default:
@@ -1077,7 +1082,6 @@ graph_guru_set_page (GraphGuruState *s, int page)
 		return;
 	}
 
-	s->current_page = page;
 	gtk_notebook_set_current_page (s->steps, page - s->initial_page);
 	gtk_window_set_title (GTK_WINDOW (s->dialog), name);
 }
